@@ -1,4 +1,4 @@
-# Rancangan Sistem Presensi Mahasiswa Magang BPS Kota Medan
+﻿# Rancangan Sistem Presensi Mahasiswa Magang BPS Kota Medan
 
 ## Role
 - **admin** - pengawas PKL
@@ -97,7 +97,9 @@ presensi-bps/
   admin/
     dashboard.php
     mahasiswa.php
+    mahasiswa_form.php
     rekap.php
+    rekap_cetak.php
     izin.php
     pengaturan.php
   mahasiswa/
@@ -105,6 +107,7 @@ presensi-bps/
     presensi.php
     izin.php
     riwayat.php
+    ganti_password.php
   includes/
     header.php
     footer.php
