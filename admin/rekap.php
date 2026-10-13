@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once '../includes/cek_login.php';
 cek_login('admin');
 require_once '../config/koneksi.php';
