@@ -2,6 +2,7 @@
 require_once '../includes/cek_login.php';
 cek_login('admin');
 require_once '../config/koneksi.php';
+require_once '../includes/fungsi.php';
 
 // Ambil filter status dari GET (default: menunggu)
 $filter_status = trim($_GET['status'] ?? 'menunggu');
@@ -100,27 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-// Array nama hari dan bulan bahasa Indonesia
-$nama_hari = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-$nama_bulan = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-];
 
-if (!function_exists('format_tgl_indo')) {
-    function format_tgl_indo($tgl_str, $nama_bulan, $nama_hari = null) {
-        $ts = strtotime($tgl_str);
-        $d  = (int) date('j', $ts);
-        $m  = (int) date('n', $ts);
-        $y  = (int) date('Y', $ts);
-        $teks = $d . ' ' . $nama_bulan[$m] . ' ' . $y;
-        if ($nama_hari !== null) {
-            $h = (int) date('N', $ts);
-            $teks = $nama_hari[$h] . ', ' . $teks;
-        }
-        return $teks;
-    }
-}
 
 // Ambil data pengajuan izin sesuai filter
 $sql = 'SELECT i.id, i.tanggal, i.jenis, i.alasan, i.bukti, i.status, i.created_at,

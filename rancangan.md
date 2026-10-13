@@ -113,6 +113,7 @@ presensi-bps/
     footer.php
     cek_login.php
     rekap_hitung.php
+    fungsi.php
   assets/
     css/
     uploads/

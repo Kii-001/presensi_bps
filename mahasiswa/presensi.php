@@ -2,6 +2,7 @@
 require_once '../includes/cek_login.php';
 cek_login('mahasiswa');
 require_once '../config/koneksi.php';
+require_once '../includes/fungsi.php';
 
 $user_id    = $_SESSION['id'];
 $hari_ini   = date('Y-m-d');
@@ -118,8 +119,7 @@ function proses_pulang($pdo, $user_id, $hari_ini, $jam_server, $presensi_hari_in
     return ['tipe' => 'success', 'teks' => 'Presensi pulang berhasil dicatat.'];
 }
 
-// Nama hari untuk tampilan
-$nama_hari = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
 $label_hari = $nama_hari[(int) date('N')];
 
 $judul_halaman = 'Presensi Hari Ini';

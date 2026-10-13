@@ -2,6 +2,7 @@
 require_once '../includes/cek_login.php';
 cek_login('admin');
 require_once '../config/koneksi.php';
+require_once '../includes/fungsi.php';
 
 // Ambil parameter filter (mendukung alias tgl_dari/tgl_awal dan tgl_sampai/tgl_akhir)
 $hari_ini    = date('Y-m-d');
@@ -57,7 +58,7 @@ $target_mhs = [];
 $mhs_terpilih = null;
 if ($user_id > 0) {
     foreach ($semua_mhs as $mhs) {
-        if ($mhs['id'] === $user_id) {
+        if ((int) $mhs['id'] === $user_id) {
             $target_mhs[] = $mhs;
             $mhs_terpilih = $mhs;
             break;
@@ -80,12 +81,7 @@ foreach ($stmt->fetchAll() as $row) {
     $presensi_index[$row['user_id']][$row['tanggal']] = $row;
 }
 
-// Array nama hari dan bulan bahasa Indonesia
-$nama_hari = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-$nama_bulan = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-];
+
 
 // Bangun daftar baris rekap dan hitung ringkasan
 $daftar_baris = [];
@@ -167,22 +163,6 @@ usort($daftar_baris, function ($a, $b) {
     }
     return strcmp($b['tanggal'], $a['tanggal']);
 });
-
-// Format tanggal Indonesia untuk tampilan teks
-if (!function_exists('format_tgl_indo')) {
-    function format_tgl_indo($tgl_str, $nama_bulan, $nama_hari = null) {
-        $ts = strtotime($tgl_str);
-        $d  = (int) date('j', $ts);
-        $m  = (int) date('n', $ts);
-        $y  = (int) date('Y', $ts);
-        $teks = $d . ' ' . $nama_bulan[$m] . ' ' . $y;
-        if ($nama_hari !== null) {
-            $h = (int) date('N', $ts);
-            $teks = $nama_hari[$h] . ', ' . $teks;
-        }
-        return $teks;
-    }
-}
 
 // -------------------------------------------------------------
 // TAMPILAN CETAK LAPORAN
@@ -374,7 +354,7 @@ $param_cetak = http_build_query([
                 <select id="user_id" name="user_id" class="form-select form-select-sm">
                     <option value="0">Semua Mahasiswa</option>
                     <?php foreach ($semua_mhs as $mhs): ?>
-                        <option value="<?= $mhs['id'] ?>" <?= $mhs['id'] === $user_id ? 'selected' : '' ?>>
+                        <option value="<?= $mhs['id'] ?>" <?= (int) $mhs['id'] === $user_id ? 'selected' : '' ?>>
                             <?= htmlspecialchars($mhs['nama']) ?> (<?= htmlspecialchars($mhs['nim']) ?>)
                         </option>
                     <?php endforeach; ?>

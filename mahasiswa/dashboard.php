@@ -3,31 +3,12 @@ require_once '../includes/cek_login.php';
 cek_login('mahasiswa');
 require_once '../config/koneksi.php';
 require_once '../includes/rekap_hitung.php';
+require_once '../includes/fungsi.php';
 
 $user_id  = (int) $_SESSION['id'];
 $hari_ini = date('Y-m-d');
 
-// Array nama hari dan bulan bahasa Indonesia
-$nama_hari = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-$nama_bulan = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-];
 
-if (!function_exists('format_tgl_indo')) {
-    function format_tgl_indo($tgl_str, $nama_bulan, $nama_hari = null) {
-        $ts = strtotime($tgl_str);
-        $d  = (int) date('j', $ts);
-        $m  = (int) date('n', $ts);
-        $y  = (int) date('Y', $ts);
-        $teks = $d . ' ' . $nama_bulan[$m] . ' ' . $y;
-        if ($nama_hari !== null) {
-            $h = (int) date('N', $ts);
-            $teks = $nama_hari[$h] . ', ' . $teks;
-        }
-        return $teks;
-    }
-}
 
 // Ambil status presensi hari ini
 $stmt_hari_ini = $pdo->prepare('SELECT jam_masuk, jam_pulang, status FROM presensi WHERE user_id = ? AND tanggal = ?');
