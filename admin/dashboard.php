@@ -1,176 +1,34 @@
 <?php
-require_once '../includes/cek_login.php';
-cek_login('admin');
-require_once '../config/koneksi.php';
-require_once '../includes/fungsi.php';
-
-$hari_ini   = date('Y-m-d');
-$hari_angka = (int) date('N'); // 1=Senin ... 7=Minggu
-$is_weekend = ($hari_angka >= 6);
-
-
-
-// Ambil presensi hari ini untuk mahasiswa aktif dalam periode magangnya (satu query)
-$stmt = $pdo->prepare(
-    'SELECT u.id AS user_id, u.nama, m.nim, m.kampus, m.jurusan,
-            p.jam_masuk, p.jam_pulang, p.status
-     FROM users u
-     JOIN mahasiswa m ON m.user_id = u.id
-     LEFT JOIN presensi p ON p.user_id = u.id AND p.tanggal = ?
-     WHERE u.role = "mahasiswa"
-       AND u.status = "aktif"
-       AND ? BETWEEN m.tgl_mulai AND m.tgl_selesai
-     ORDER BY u.nama ASC'
-);
-$stmt->execute([$hari_ini, $hari_ini]);
-$daftar_mahasiswa = $stmt->fetchAll();
-
-// Hitung rekapitulasi kartu hari ini
-$hadir          = 0;
-$terlambat      = 0;
-$izin_sakit     = 0;
-$belum_presensi = 0;
-
-if (!$is_weekend) {
-    foreach ($daftar_mahasiswa as $row) {
-        if ($row['status'] === 'hadir') {
-            $hadir++;
-        } elseif ($row['status'] === 'terlambat') {
-            $terlambat++;
-        } elseif (in_array($row['status'], ['izin', 'sakit'], true)) {
-            $izin_sakit++;
-        } elseif (empty($row['status'])) {
-            $belum_presensi++;
-        }
-    }
-}
-
-// Ambil jumlah pengajuan izin berstatus menunggu
-$stmt_izin = $pdo->query('SELECT COUNT(*) FROM izin WHERE status = "menunggu"');
-$izin_menunggu = (int) $stmt_izin->fetchColumn();
-
-$judul_halaman = 'Dashboard Admin';
-require_once '../includes/header.php';
+require __DIR__ . '/../includes/functions.php';
+require_role('admin');
+$today = date('Y-m-d');
+$total = (int)q("SELECT COUNT(*) FROM users WHERE role='mahasiswa' AND status='aktif'")->fetchColumn();
+$c = q('SELECT status, COUNT(*) FROM presensi WHERE tanggal=? GROUP BY status', [$today])->fetchAll(PDO::FETCH_KEY_PAIR);
+$hadir = (int)($c['hadir'] ?? 0); $tl = (int)($c['terlambat'] ?? 0); $iz = (int)($c['izin'] ?? 0) + (int)($c['sakit'] ?? 0);
+$belum = max(0, $total - $hadir - $tl - $iz);
+$hari = []; // 7 hari kerja terakhir
+for ($t = strtotime($today); count($hari) < 7; $t = strtotime('-1 day', $t)) { if (date('N', $t) < 6) $hari[] = date('Y-m-d', $t); }
+$hari = array_reverse($hari);
+$per = q("SELECT tanggal, COUNT(*) FROM presensi WHERE tanggal BETWEEN ? AND ? AND status IN ('hadir','terlambat') GROUP BY tanggal", [$hari[0], $today])->fetchAll(PDO::FETCH_KEY_PAIR);
+$max = max(1, $total, ...array_values($per ?: [0]));
+$latest = q('SELECT p.*, u.nama, u.universitas FROM presensi p JOIN users u ON u.id=p.user_id WHERE p.tanggal=? ORDER BY COALESCE(p.jam_pulang,p.jam_masuk) DESC LIMIT 8', [$today])->fetchAll();
+page_start('Dashboard', 'dashboard');
 ?>
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h4 class="mb-0">Dashboard Admin</h4>
-        <div class="text-muted small"><?= format_tgl_indo($hari_ini, $nama_bulan, $nama_hari) ?></div>
-    </div>
+<div class="stats">
+  <div class="stat"><b><?= $total ?></b><span>Mahasiswa aktif</span></div>
+  <div class="stat s-ok"><b><?= $hadir ?></b><span>Hadir hari ini</span></div>
+  <div class="stat s-warn"><b><?= $tl ?></b><span>Terlambat</span></div>
+  <div class="stat"><b><?= $iz ?></b><span>Izin / sakit</span></div>
+  <div class="stat s-mute"><b><?= $belum ?></b><span>Belum presensi</span></div>
 </div>
-
-<?php if ($is_weekend): ?>
-    <div class="alert alert-secondary mb-4" role="alert">
-        <strong>Hari ini bukan hari kerja (akhir pekan).</strong> Presensi hari ini bernilai 0.
-    </div>
-<?php endif; ?>
-
-<!-- Kartu Ringkasan Hari Ini -->
-<div class="row g-2 mb-4">
-    <div class="col-6 col-md">
-        <div class="card text-center border-success">
-            <div class="card-body p-2">
-                <div class="fw-bold fs-4 text-success"><?= $hadir ?></div>
-                <div class="small text-muted">Hadir</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md">
-        <div class="card text-center border-warning">
-            <div class="card-body p-2">
-                <div class="fw-bold fs-4 text-warning"><?= $terlambat ?></div>
-                <div class="small text-muted">Terlambat</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md">
-        <div class="card text-center border-info">
-            <div class="card-body p-2">
-                <div class="fw-bold fs-4 text-info"><?= $izin_sakit ?></div>
-                <div class="small text-muted">Izin / Sakit</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md">
-        <div class="card text-center border-danger">
-            <div class="card-body p-2">
-                <div class="fw-bold fs-4 text-danger"><?= $belum_presensi ?></div>
-                <div class="small text-muted">Belum Presensi</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-md">
-        <div class="card text-center border-primary">
-            <div class="card-body p-2">
-                <div class="fw-bold fs-4 text-primary"><?= $izin_menunggu ?></div>
-                <div class="small">
-                    <a href="izin.php?status=menunggu" class="text-decoration-none">Izin Menunggu &rarr;</a>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="grid g-side">
+  <div class="card"><div class="card-h"><h2>Presensi hari ini</h2><a class="btn btn-line btn-sm" href="<?= e(url('admin/presensi.php')) ?>">Rekap lengkap</a></div>
+  <div class="tw"><table><thead><tr><th>Mahasiswa</th><th>Clock In</th><th>Clock Out</th><th>Status</th><th></th></tr></thead><tbody>
+  <?php foreach ($latest as $p): ?><tr><td><b><?= e($p['nama']) ?></b><br><span class="muted small"><?= e($p['universitas']) ?></span></td><td><?= e(jam($p['jam_masuk'])) ?></td><td><?= e(jam($p['jam_pulang'])) ?></td><td><?= badge($p['status']) ?></td>
+  <td><a class="btn btn-line btn-sm" href="<?= e(url('admin/presensi_detail.php?id=' . $p['id'])) ?>">Detail</a></td></tr>
+  <?php endforeach; if (!$latest): ?><tr><td colspan="5" class="empty">Belum ada presensi hari ini.</td></tr><?php endif; ?></tbody></table></div></div>
+  <div class="card"><h2>Kehadiran 7 hari kerja</h2><div class="bars">
+    <?php foreach ($hari as $d): $n = (int)($per[$d] ?? 0); ?><div><b><?= $n ?></b><i style="height:<?= round($n / $max * 100) ?>px"></i><?= e(substr(HARI[(int)date('w', strtotime($d))], 0, 3)) ?></div><?php endforeach; ?>
+  </div><p class="muted small" style="margin:14px 0 0">Jumlah mahasiswa yang hadir atau terlambat per hari.</p></div>
 </div>
-
-<!-- Tabel Presensi Hari Ini -->
-<h5 class="mb-3">Presensi Mahasiswa Hari Ini</h5>
-
-<?php if (empty($daftar_mahasiswa)): ?>
-    <div class="alert alert-info">Tidak ada mahasiswa magang aktif pada tanggal hari ini.</div>
-<?php else: ?>
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover table-sm align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th style="width: 40px;" class="text-center">No</th>
-                    <th>Nama Mahasiswa</th>
-                    <th>NIM</th>
-                    <th>Kampus</th>
-                    <th>Jam Masuk</th>
-                    <th>Jam Pulang</th>
-                    <th class="text-center">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($daftar_mahasiswa as $idx => $mhs):
-                $st = $mhs['status'];
-                if (empty($st)) {
-                    $badge_class = 'bg-secondary';
-                    $badge_text  = 'Belum presensi';
-                } elseif ($st === 'hadir') {
-                    $badge_class = 'bg-success';
-                    $badge_text  = 'Hadir';
-                } elseif ($st === 'terlambat') {
-                    $badge_class = 'bg-warning text-dark';
-                    $badge_text  = 'Terlambat';
-                } elseif ($st === 'izin') {
-                    $badge_class = 'bg-info';
-                    $badge_text  = 'Izin';
-                } elseif ($st === 'sakit') {
-                    $badge_class = 'bg-secondary';
-                    $badge_text  = 'Sakit';
-                } else {
-                    $badge_class = 'bg-danger';
-                    $badge_text  = ucfirst($st);
-                }
-            ?>
-                <tr>
-                    <td class="text-center"><?= $idx + 1 ?></td>
-                    <td><?= htmlspecialchars($mhs['nama']) ?></td>
-                    <td><?= htmlspecialchars($mhs['nim']) ?></td>
-                    <td><?= htmlspecialchars($mhs['kampus']) ?></td>
-                    <td><?= !empty($mhs['jam_masuk']) ? htmlspecialchars($mhs['jam_masuk']) : '-' ?></td>
-                    <td><?= !empty($mhs['jam_pulang']) ? htmlspecialchars($mhs['jam_pulang']) : '-' ?></td>
-                    <td class="text-center">
-                        <span class="badge <?= $badge_class ?>">
-                            <?= $badge_text ?>
-                        </span>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-<?php endif; ?>
-
-<?php require_once '../includes/footer.php'; ?>
+<?php page_end();

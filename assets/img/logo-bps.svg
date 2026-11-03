@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Ellipse ring orange top -->
+  <ellipse cx="108" cy="90" rx="85" ry="55" fill="none" stroke="#F28C28" stroke-width="12" stroke-dasharray="220 70" stroke-dashoffset="-10" transform="rotate(-20 108 90)"/>
+  <!-- Ellipse ring blue bottom -->
+  <ellipse cx="95" cy="115" rx="85" ry="50" fill="none" stroke="#1B9AD4" stroke-width="11" stroke-dasharray="220 80" stroke-dashoffset="40" transform="rotate(-15 95 115)"/>
+
+  <!-- Blue B shape (left tall rectangle + notch) -->
+  <rect x="42" y="30" width="28" height="70" rx="6" fill="#1B9AD4"/>
+  <rect x="42" y="78" width="22" height="50" rx="6" fill="#1B9AD4"/>
+
+  <!-- Green P shape (middle tall) -->
+  <rect x="80" y="58" width="28" height="85" rx="6" fill="#4CB840"/>
+  <rect x="80" y="90" width="24" height="50" rx="6" fill="#4CB840"/>
+
+  <!-- Orange S shape (right) -->
+  <rect x="114" y="22" width="28" height="55" rx="6" fill="#F28C28"/>
+  <rect x="118" y="55" width="26" height="55" rx="6" fill="#F28C28"/>
+</svg>
